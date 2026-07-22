@@ -5,7 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { HelpCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { Avatar } from "@/components/ui/avatar";
 import { NAV_GROUPS, SETTINGS_ITEM } from "./nav-items";
 
 function isActive(pathname: string, href: string) {
@@ -63,19 +62,11 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-paper/10 px-4 py-4">
-        <div className="flex items-center gap-2.5">
-          <Avatar name="Angela Kalopisis" size="md" />
-          <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm text-paper">Angela Kalopisis</p>
-            <p className="truncate text-[11px] text-sidebar-footnote">Ministry Coordinator</p>
-          </div>
-        </div>
-
         <Link
           href={SETTINGS_ITEM.href}
           onClick={onNavigate}
           className={cn(
-            "mt-3 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+            "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
             isActive(pathname, SETTINGS_ITEM.href) ? "bg-paper/10 text-paper font-medium" : "text-paper/65 hover:bg-paper/5 hover:text-paper"
           )}
         >

@@ -89,8 +89,8 @@ export function LessonTable({
               </td>
               <td className="px-4 py-3">
                 <span className="flex items-center gap-2 text-charcoal-soft">
-                  <Avatar name={lesson.author} size="sm" />
-                  {lesson.author}
+                  <Avatar name={lesson.author || "Unassigned"} size="sm" />
+                  {lesson.author || "Unassigned"}
                 </span>
               </td>
               <td className="px-4 py-3 text-charcoal-soft">{formatDate(lesson.updatedAt)}</td>

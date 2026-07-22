@@ -22,10 +22,6 @@ export default function SettingsPage() {
               <p className="text-xs font-medium text-charcoal-soft">Name</p>
               <p className="mt-1 text-sm text-charcoal">Greek Orthodox Community of London</p>
             </div>
-            <div>
-              <p className="text-xs font-medium text-charcoal-soft">Youth ministry coordinator</p>
-              <p className="mt-1 text-sm text-charcoal">Angela Kalopisis</p>
-            </div>
           </div>
         </Card>
       </div>

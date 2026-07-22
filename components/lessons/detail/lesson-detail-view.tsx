@@ -254,7 +254,7 @@ export function LessonDetailView({
               </div>
               <div>
                 <dt className="text-xs text-charcoal-soft">Author</dt>
-                <dd className="text-charcoal">{lesson.author}</dd>
+                <dd className="text-charcoal">{lesson.author || "—"}</dd>
               </div>
             </dl>
           </Section>

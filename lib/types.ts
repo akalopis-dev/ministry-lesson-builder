@@ -492,7 +492,7 @@ export function blankLessonPlan(): LessonPlan {
     communication: emptyCommunication(),
     attachments: [],
     revisions: [{ id: makeId("rev"), label: "Lesson created", timestamp: now }],
-    author: "Angela",
+    author: "",
     createdAt: now,
     updatedAt: now,
   };

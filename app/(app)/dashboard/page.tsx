@@ -32,9 +32,9 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl px-6 py-10 lg:px-10">
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-gold/25 bg-gold-soft/60 px-6 py-6 shadow-soft">
         <div className="flex items-center gap-4">
-          <Avatar name="Angela Kalopisis" size="lg" />
+          <Avatar name="Ministry Team" size="lg" />
           <div>
-            <h1 className="font-heading text-2xl font-semibold text-navy">{greeting()}, Angela</h1>
+            <h1 className="font-heading text-2xl font-semibold text-navy">{greeting()}</h1>
             <p className="mt-1 text-sm text-charcoal-soft">Continue planning your youth ministry sessions.</p>
           </div>
         </div>
