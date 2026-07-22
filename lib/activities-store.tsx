@@ -31,7 +31,14 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     let cancelled = false;
     fetchTable<Activity>("activities")
       .then((data) => {
-        if (!cancelled) setActivities(data);
+        // Merge rather than replace: a mutation can complete locally before this
+        // initial fetch resolves — replacing state outright would wipe it back out.
+        if (!cancelled) {
+          setActivities((prev) => {
+            const knownIds = new Set(prev.map((a) => a.id));
+            return [...prev, ...data.filter((a) => !knownIds.has(a.id))];
+          });
+        }
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load activities — check your connection");

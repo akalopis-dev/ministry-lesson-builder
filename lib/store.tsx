@@ -39,7 +39,15 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
     let cancelled = false;
     fetchTable<LessonPlan>("lessons")
       .then((data) => {
-        if (!cancelled) setLessons(data);
+        // Merge rather than replace: a mutation (e.g. creating a lesson from a
+        // template) can complete locally before this initial fetch resolves —
+        // replacing state outright would wipe it back out.
+        if (!cancelled) {
+          setLessons((prev) => {
+            const knownIds = new Set(prev.map((l) => l.id));
+            return [...prev, ...data.filter((l) => !knownIds.has(l.id))];
+          });
+        }
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load lesson plans — check your connection");

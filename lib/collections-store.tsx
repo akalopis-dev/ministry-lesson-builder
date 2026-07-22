@@ -35,7 +35,14 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     let cancelled = false;
     fetchTable<Collection>("collections")
       .then((data) => {
-        if (!cancelled) setCollections(data);
+        // Merge rather than replace: a mutation can complete locally before this
+        // initial fetch resolves — replacing state outright would wipe it back out.
+        if (!cancelled) {
+          setCollections((prev) => {
+            const knownIds = new Set(prev.map((c) => c.id));
+            return [...prev, ...data.filter((c) => !knownIds.has(c.id))];
+          });
+        }
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load collections — check your connection");
