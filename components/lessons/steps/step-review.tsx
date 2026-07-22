@@ -72,7 +72,7 @@ export function StepReview({
           variant="secondary"
           onClick={() => {
             onSaveAsTemplate();
-            showToast("Saved as a reusable template outline");
+            showToast(`Saved "${lesson.title || "Untitled template"}" to your templates`);
           }}
         >
           <Bookmark size={14} /> Save as template

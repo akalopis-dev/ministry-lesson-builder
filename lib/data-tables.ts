@@ -8,6 +8,7 @@ export const TABLES = {
   collections: { seed: null },
   scripture: { seed: null },
   prayers: { seed: null },
+  templates: { seed: null },
 } as const;
 
 export type TableName = keyof typeof TABLES;

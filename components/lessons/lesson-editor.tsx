@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { LessonPlan } from "@/lib/types";
 import { useLessonPlans } from "@/lib/store";
+import { useTemplates } from "@/lib/templates-store";
 import { LessonOutline, type OutlineStep } from "@/components/lessons/lesson-outline";
 import { LessonSummaryPanel } from "@/components/lessons/lesson-summary-panel";
 import { StepDetails } from "@/components/lessons/steps/step-details";
@@ -69,6 +70,7 @@ function stepComplete(id: string, lesson: LessonPlan): boolean {
 export function LessonEditor({ initialLesson }: { initialLesson: LessonPlan }) {
   const router = useRouter();
   const { saveLesson } = useLessonPlans();
+  const { addTemplate } = useTemplates();
   const [lesson, setLesson] = useState<LessonPlan>(initialLesson);
   const [activeStep, setActiveStep] = useState<string>("details");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -110,7 +112,13 @@ export function LessonEditor({ initialLesson }: { initialLesson: LessonPlan }) {
   }
 
   function handleSaveAsTemplate() {
-    saveLesson(lesson);
+    addTemplate({
+      name: lesson.title || "Untitled template",
+      description: lesson.summary,
+      ministry: lesson.ministry,
+      durationMinutes: lesson.durationMinutes,
+      blocks: lesson.blocks.map((b) => ({ type: b.type, title: b.title, durationMinutes: b.durationMinutes })),
+    });
   }
 
   function renderStep() {

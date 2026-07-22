@@ -3,6 +3,7 @@ import { ActivitiesProvider } from "@/lib/activities-store";
 import { CollectionsProvider } from "@/lib/collections-store";
 import { ScriptureProvider } from "@/lib/scripture-store";
 import { PrayersProvider } from "@/lib/prayers-store";
+import { TemplatesProvider } from "@/lib/templates-store";
 import { AppShell } from "@/components/layout/app-shell";
 import { ToastProvider } from "@/components/ui/toast";
 
@@ -13,9 +14,11 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
         <ActivitiesProvider>
           <ScriptureProvider>
             <PrayersProvider>
-              <CollectionsProvider>
-                <AppShell>{children}</AppShell>
-              </CollectionsProvider>
+              <TemplatesProvider>
+                <CollectionsProvider>
+                  <AppShell>{children}</AppShell>
+                </CollectionsProvider>
+              </TemplatesProvider>
             </PrayersProvider>
           </ScriptureProvider>
         </ActivitiesProvider>

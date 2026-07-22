@@ -13,6 +13,7 @@ import {
   CalendarDays,
   MapPin,
   Star,
+  User,
 } from "lucide-react";
 import type { LessonPlan } from "@/lib/types";
 import { StatusBadge, Tag, BlockTypeTag, MinistryTag } from "@/components/ui/badge";
@@ -205,6 +206,11 @@ export function LessonDetailView({
         <h1 className="font-heading text-3xl font-semibold text-navy">{lesson.title}</h1>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-charcoal-soft">
           <MinistryTag ministry={lesson.ministry} />
+          {lesson.leadFacilitator && (
+            <span className="flex items-center gap-1.5">
+              <User size={14} /> {lesson.leadFacilitator}
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
             <Clock size={14} /> {formatMinutes(lesson.durationMinutes)}
           </span>
