@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search lessons, activities, templates..."
+              placeholder="Search lessons, activities, Scripture, prayers..."
               className="w-full rounded-md border border-border-strong bg-surface/50 py-1.5 pl-9 pr-3 text-sm placeholder:text-charcoal-soft/70 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:bg-paper"
             />
           </form>

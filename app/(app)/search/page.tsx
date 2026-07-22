@@ -3,12 +3,14 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Search, NotebookText, Blocks, LayoutTemplate } from "lucide-react";
+import { Search, NotebookText, Blocks, LayoutTemplate, BookOpen, HandHelping } from "lucide-react";
 import { useLessonPlans } from "@/lib/store";
 import { useActivities } from "@/lib/activities-store";
+import { useScripture } from "@/lib/scripture-store";
+import { usePrayers } from "@/lib/prayers-store";
 import { TEMPLATES } from "@/lib/data/templates";
 import type { LessonPlan } from "@/lib/types";
-import { StatusBadge, ActivityCategoryTag, MinistryTag } from "@/components/ui/badge";
+import { StatusBadge, ActivityCategoryTag, ScriptureCategoryTag, PrayerCategoryTag, MinistryTag } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 
@@ -33,6 +35,8 @@ function SearchContent() {
   const router = useRouter();
   const { lessons, loaded: lessonsLoaded } = useLessonPlans();
   const { activities, loaded: activitiesLoaded } = useActivities();
+  const { passages, loaded: scriptureLoaded } = useScripture();
+  const { prayers, loaded: prayersLoaded } = usePrayers();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
 
   const q = query.trim().toLowerCase();
@@ -52,14 +56,31 @@ function SearchContent() {
     return TEMPLATES.filter((t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q));
   }, [q]);
 
-  const totalResults = matchedLessons.length + matchedActivities.length + matchedTemplates.length;
+  const matchedPassages = useMemo(() => {
+    if (!q) return [];
+    return passages.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.reference.toLowerCase().includes(q) ||
+        p.text.toLowerCase().includes(q) ||
+        p.connection.toLowerCase().includes(q)
+    );
+  }, [passages, q]);
 
-  if (!lessonsLoaded || !activitiesLoaded) return <LoadingState label="Loading search…" />;
+  const matchedPrayers = useMemo(() => {
+    if (!q) return [];
+    return prayers.filter((p) => p.title.toLowerCase().includes(q) || p.text.toLowerCase().includes(q));
+  }, [prayers, q]);
+
+  const totalResults =
+    matchedLessons.length + matchedActivities.length + matchedTemplates.length + matchedPassages.length + matchedPrayers.length;
+
+  if (!lessonsLoaded || !activitiesLoaded || !scriptureLoaded || !prayersLoaded) return <LoadingState label="Loading search…" />;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10 lg:px-10">
       <h1 className="font-heading text-2xl font-semibold text-navy">Search</h1>
-      <p className="mt-1 text-sm text-charcoal-soft">Search across lesson plans, activities, and templates.</p>
+      <p className="mt-1 text-sm text-charcoal-soft">Search across lesson plans, activities, Scripture, prayers, and templates.</p>
 
       <form
         onSubmit={(e) => {
@@ -73,7 +94,7 @@ function SearchContent() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoFocus
-          placeholder="Search lessons, activities, templates..."
+          placeholder="Search lessons, activities, Scripture, prayers..."
           className="w-full rounded-md border border-border-strong bg-paper py-2.5 pl-9 pr-3 text-sm placeholder:text-charcoal-soft/70 focus:outline-none focus:ring-2 focus:ring-navy/20"
         />
       </form>
@@ -119,6 +140,43 @@ function SearchContent() {
                         <p className="text-xs text-charcoal-soft">{a.summary}</p>
                       </div>
                       <ActivityCategoryTag category={a.category} />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {matchedPassages.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-charcoal-soft">
+                  <BookOpen size={14} /> Scripture ({matchedPassages.length})
+                </h2>
+                <div className="mt-2 divide-y divide-border rounded-md border border-border bg-paper shadow-soft">
+                  {matchedPassages.map((p) => (
+                    <Link key={p.id} href="/scripture" className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface/40">
+                      <div>
+                        <p className="font-medium text-navy">{p.title}</p>
+                        <p className="text-xs text-charcoal-soft">{p.reference}</p>
+                      </div>
+                      <ScriptureCategoryTag category={p.category} />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {matchedPrayers.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-charcoal-soft">
+                  <HandHelping size={14} /> Prayers ({matchedPrayers.length})
+                </h2>
+                <div className="mt-2 divide-y divide-border rounded-md border border-border bg-paper shadow-soft">
+                  {matchedPrayers.map((p) => (
+                    <Link key={p.id} href="/prayers" className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface/40">
+                      <div>
+                        <p className="font-medium text-navy">{p.title}</p>
+                      </div>
+                      <PrayerCategoryTag category={p.category} />
                     </Link>
                   ))}
                 </div>

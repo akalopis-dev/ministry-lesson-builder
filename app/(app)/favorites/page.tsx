@@ -1,22 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { Star, NotebookText, Blocks } from "lucide-react";
+import { Star, NotebookText, Blocks, BookOpen, HandHelping } from "lucide-react";
 import { useLessonPlans } from "@/lib/store";
 import { useActivities } from "@/lib/activities-store";
-import { StatusBadge, ActivityCategoryTag, MinistryTag } from "@/components/ui/badge";
+import { useScripture } from "@/lib/scripture-store";
+import { usePrayers } from "@/lib/prayers-store";
+import { StatusBadge, ActivityCategoryTag, ScriptureCategoryTag, PrayerCategoryTag, MinistryTag } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 
 export default function FavoritesPage() {
   const { lessons, loaded: lessonsLoaded } = useLessonPlans();
   const { activities, loaded: activitiesLoaded } = useActivities();
+  const { passages, loaded: scriptureLoaded } = useScripture();
+  const { prayers, loaded: prayersLoaded } = usePrayers();
 
-  if (!lessonsLoaded || !activitiesLoaded) return <LoadingState label="Loading favorites…" />;
+  if (!lessonsLoaded || !activitiesLoaded || !scriptureLoaded || !prayersLoaded) return <LoadingState label="Loading favorites…" />;
 
   const favoriteLessons = lessons.filter((l) => l.favorite && !l.archived);
   const favoriteActivities = activities.filter((a) => a.favorite);
-  const total = favoriteLessons.length + favoriteActivities.length;
+  const favoritePassages = passages.filter((p) => p.favorite);
+  const favoritePrayers = prayers.filter((p) => p.favorite);
+  const total = favoriteLessons.length + favoriteActivities.length + favoritePassages.length + favoritePrayers.length;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10 lg:px-10">
@@ -26,7 +32,7 @@ export default function FavoritesPage() {
         </div>
         <div>
           <h1 className="font-heading text-2xl font-semibold text-navy">Favorites</h1>
-          <p className="text-sm text-charcoal-soft">Lesson plans and activities you&rsquo;ve starred.</p>
+          <p className="text-sm text-charcoal-soft">Lessons, activities, Scripture, and prayers you&rsquo;ve starred.</p>
         </div>
       </div>
 
@@ -73,6 +79,43 @@ export default function FavoritesPage() {
                         <p className="text-xs text-charcoal-soft">{a.summary}</p>
                       </div>
                       <ActivityCategoryTag category={a.category} />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {favoritePassages.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-charcoal-soft">
+                  <BookOpen size={14} /> Scripture ({favoritePassages.length})
+                </h2>
+                <div className="mt-2 divide-y divide-border rounded-md border border-border bg-paper shadow-soft">
+                  {favoritePassages.map((p) => (
+                    <Link key={p.id} href="/scripture" className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface/40">
+                      <div>
+                        <p className="font-medium text-navy">{p.title}</p>
+                        <p className="text-xs text-charcoal-soft">{p.reference}</p>
+                      </div>
+                      <ScriptureCategoryTag category={p.category} />
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {favoritePrayers.length > 0 && (
+              <section>
+                <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-charcoal-soft">
+                  <HandHelping size={14} /> Prayers ({favoritePrayers.length})
+                </h2>
+                <div className="mt-2 divide-y divide-border rounded-md border border-border bg-paper shadow-soft">
+                  {favoritePrayers.map((p) => (
+                    <Link key={p.id} href="/prayers" className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface/40">
+                      <div>
+                        <p className="font-medium text-navy">{p.title}</p>
+                      </div>
+                      <PrayerCategoryTag category={p.category} />
                     </Link>
                   ))}
                 </div>
