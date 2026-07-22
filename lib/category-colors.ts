@@ -1,4 +1,4 @@
-import type { ActivityCategory, BlockType } from "@/lib/types";
+import type { ActivityCategory, BlockType, PrayerCategory, ScriptureCategory } from "@/lib/types";
 
 export type AccentColor = "navy" | "gold" | "burgundy" | "olive" | "brown" | "sage" | "neutral";
 
@@ -51,4 +51,22 @@ export const ACTIVITY_CATEGORY_ACCENTS: Record<ActivityCategory, AccentColor> = 
   "Team-building activities": "navy",
   "Active games": "olive",
   "Knowledge & faith games": "burgundy",
+};
+
+export const SCRIPTURE_CATEGORY_ACCENTS: Record<ScriptureCategory, AccentColor> = {
+  "Gospel reading": "navy",
+  "Epistle reading": "burgundy",
+  "Old Testament reading": "olive",
+  Psalm: "gold",
+  "Saint quotation": "brown",
+  "Church Father quotation": "sage",
+};
+
+export const PRAYER_CATEGORY_ACCENTS: Record<PrayerCategory, AccentColor> = {
+  "Opening prayer": "gold",
+  "Closing prayer": "navy",
+  "Meal prayer": "olive",
+  "Seasonal prayer": "burgundy",
+  "Traditional prayer": "brown",
+  Other: "neutral",
 };

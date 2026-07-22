@@ -6,6 +6,8 @@ export const TABLES = {
   lessons: { seed: SEED_LESSONS as { id: string }[] },
   activities: { seed: ACTIVITIES as { id: string }[] },
   collections: { seed: null },
+  scripture: { seed: null },
+  prayers: { seed: null },
 } as const;
 
 export type TableName = keyof typeof TABLES;

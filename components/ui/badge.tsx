@@ -1,6 +1,12 @@
 import { cn } from "@/lib/cn";
-import type { ActivityCategory, BlockType, LessonStatus, Ministry } from "@/lib/types";
-import { ACCENT_TAG_CLASSES, ACTIVITY_CATEGORY_ACCENTS, BLOCK_TYPE_ACCENTS } from "@/lib/category-colors";
+import type { ActivityCategory, BlockType, LessonStatus, Ministry, PrayerCategory, ScriptureCategory } from "@/lib/types";
+import {
+  ACCENT_TAG_CLASSES,
+  ACTIVITY_CATEGORY_ACCENTS,
+  BLOCK_TYPE_ACCENTS,
+  PRAYER_CATEGORY_ACCENTS,
+  SCRIPTURE_CATEGORY_ACCENTS,
+} from "@/lib/category-colors";
 import { MINISTRY_ACCENTS } from "@/lib/ministry-colors";
 
 const statusStyles: Record<LessonStatus, string> = {
@@ -89,6 +95,36 @@ export function ActivityCategoryTag({ category, className }: { category: Activit
       className={cn(
         "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium",
         ACCENT_TAG_CLASSES[ACTIVITY_CATEGORY_ACCENTS[category]],
+        className
+      )}
+    >
+      {category}
+    </span>
+  );
+}
+
+/** Color-coded tag for a Scripture Library category. */
+export function ScriptureCategoryTag({ category, className }: { category: ScriptureCategory; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium",
+        ACCENT_TAG_CLASSES[SCRIPTURE_CATEGORY_ACCENTS[category]],
+        className
+      )}
+    >
+      {category}
+    </span>
+  );
+}
+
+/** Color-coded tag for a Prayer Library category. */
+export function PrayerCategoryTag({ category, className }: { category: PrayerCategory; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium",
+        ACCENT_TAG_CLASSES[PRAYER_CATEGORY_ACCENTS[category]],
         className
       )}
     >

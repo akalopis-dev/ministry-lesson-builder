@@ -318,6 +318,64 @@ export interface Collection {
   createdAt: string;
 }
 
+export type ScriptureCategory =
+  | "Gospel reading"
+  | "Epistle reading"
+  | "Old Testament reading"
+  | "Psalm"
+  | "Saint quotation"
+  | "Church Father quotation";
+
+export const SCRIPTURE_CATEGORIES: ScriptureCategory[] = [
+  "Gospel reading",
+  "Epistle reading",
+  "Old Testament reading",
+  "Psalm",
+  "Saint quotation",
+  "Church Father quotation",
+];
+
+export interface ScripturePassage {
+  id: string;
+  reference: string;
+  title: string;
+  category: ScriptureCategory;
+  ministries: Ministry[];
+  text: string;
+  connection: string;
+  source?: string;
+  tags?: string[];
+  favorite?: boolean;
+}
+
+export type PrayerCategory =
+  | "Opening prayer"
+  | "Closing prayer"
+  | "Meal prayer"
+  | "Seasonal prayer"
+  | "Traditional prayer"
+  | "Other";
+
+export const PRAYER_CATEGORIES: PrayerCategory[] = [
+  "Opening prayer",
+  "Closing prayer",
+  "Meal prayer",
+  "Seasonal prayer",
+  "Traditional prayer",
+  "Other",
+];
+
+export interface Prayer {
+  id: string;
+  title: string;
+  category: PrayerCategory;
+  ministries: Ministry[];
+  text: string;
+  source?: string;
+  tags?: string[];
+  favorite?: boolean;
+}
+
 export interface LessonPlan {
   id: string;
   title: string;
