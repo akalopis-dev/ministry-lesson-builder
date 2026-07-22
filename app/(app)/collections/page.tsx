@@ -6,13 +6,14 @@ import { FolderKanban, Plus, NotebookText, Blocks } from "lucide-react";
 import { useCollections } from "@/lib/collections-store";
 import { CollectionFormDrawer } from "@/components/collections/collection-form-drawer";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Button } from "@/components/ui/button";
 
 export default function CollectionsPage() {
   const { collections, loaded, addCollection } = useCollections();
   const [formOpen, setFormOpen] = useState(false);
 
-  if (!loaded) return null;
+  if (!loaded) return <LoadingState label="Loading collections…" />;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 lg:px-10">

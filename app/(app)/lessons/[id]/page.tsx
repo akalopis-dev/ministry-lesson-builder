@@ -6,6 +6,7 @@ import { useLessonPlans } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
 import { LessonDetailView, type PrintMode } from "@/components/lessons/detail/lesson-detail-view";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Button } from "@/components/ui/button";
 import { FileQuestion } from "lucide-react";
 
@@ -26,7 +27,7 @@ function LessonDetailContent() {
     }
   }, [printRequested, mode]);
 
-  if (!loaded) return null;
+  if (!loaded) return <LoadingState label="Loading lesson…" />;
 
   const lesson = getLesson(params.id);
 

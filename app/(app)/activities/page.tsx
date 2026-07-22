@@ -8,6 +8,7 @@ import { ACTIVITY_CATEGORIES, MINISTRIES, type Activity, type ActivityCategory, 
 import { Chip, Tag, ActivityCategoryTag, MinistryTag } from "@/components/ui/badge";
 import { ACCENT_DOT_CLASSES, ACTIVITY_CATEGORY_ACCENTS } from "@/lib/category-colors";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Button } from "@/components/ui/button";
 import { ActivityFormDrawer } from "@/components/activities/activity-form-drawer";
 import { AddToCollectionMenu } from "@/components/collections/add-to-collection-menu";
@@ -73,7 +74,7 @@ export default function ActivitiesPage() {
     }
   }
 
-  if (!loaded) return null;
+  if (!loaded) return <LoadingState label="Loading the activity library…" />;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10 lg:px-10">

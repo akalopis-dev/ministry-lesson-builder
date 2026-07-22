@@ -10,6 +10,7 @@ import { useActivities } from "@/lib/activities-store";
 import { StatusBadge, ActivityCategoryTag } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Drawer } from "@/components/ui/drawer";
 import { CollectionFormDrawer } from "@/components/collections/collection-form-drawer";
 
@@ -23,7 +24,7 @@ export default function CollectionDetailPage() {
   const [addLessonOpen, setAddLessonOpen] = useState(false);
   const [addActivityOpen, setAddActivityOpen] = useState(false);
 
-  if (!collectionsLoaded || !lessonsLoaded || !activitiesLoaded) return null;
+  if (!collectionsLoaded || !lessonsLoaded || !activitiesLoaded) return <LoadingState label="Loading collection…" />;
 
   const collection = getCollection(params.id);
 

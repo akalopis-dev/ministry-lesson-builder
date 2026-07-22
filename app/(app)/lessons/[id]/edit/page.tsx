@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useLessonPlans } from "@/lib/store";
 import { LessonEditor } from "@/components/lessons/lesson-editor";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Button } from "@/components/ui/button";
 import { FileQuestion } from "lucide-react";
 
@@ -12,7 +13,7 @@ export default function EditLessonPage() {
   const router = useRouter();
   const { getLesson, loaded } = useLessonPlans();
 
-  if (!loaded) return null;
+  if (!loaded) return <LoadingState label="Loading lesson…" />;
 
   const lesson = getLesson(params.id);
 

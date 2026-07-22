@@ -12,6 +12,7 @@ import { RecentLessonsTable } from "@/components/dashboard/recent-lessons-table"
 import { QuickStart } from "@/components/dashboard/quick-start";
 import { ResourceOverview } from "@/components/dashboard/resource-overview";
 import { SeasonalSuggestions } from "@/components/dashboard/seasonal-suggestions";
+import { LoadingState } from "@/components/ui/loading-state";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -25,7 +26,7 @@ export default function DashboardPage() {
   const { lessons, loaded } = useLessonPlans();
   const { activities, loaded: activitiesLoaded } = useActivities();
 
-  if (!loaded || !activitiesLoaded) return null;
+  if (!loaded || !activitiesLoaded) return <LoadingState label="Loading your dashboard…" />;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 lg:px-10">

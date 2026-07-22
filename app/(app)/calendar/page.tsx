@@ -7,6 +7,7 @@ import type { LessonPlan } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { formatMinutes } from "@/lib/time";
 
 function monthLabel(dateStr: string): string {
@@ -34,7 +35,7 @@ function groupByMonth(lessons: LessonPlan[]): [string, LessonPlan[]][] {
 export default function CalendarPage() {
   const { lessons, loaded } = useLessonPlans();
 
-  if (!loaded) return null;
+  if (!loaded) return <LoadingState label="Loading your calendar…" />;
 
   const dated = lessons
     .filter((l) => !l.archived && l.date)

@@ -6,12 +6,13 @@ import { useLessonPlans } from "@/lib/store";
 import { useActivities } from "@/lib/activities-store";
 import { StatusBadge, ActivityCategoryTag, MinistryTag } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 
 export default function FavoritesPage() {
   const { lessons, loaded: lessonsLoaded } = useLessonPlans();
   const { activities, loaded: activitiesLoaded } = useActivities();
 
-  if (!lessonsLoaded || !activitiesLoaded) return null;
+  if (!lessonsLoaded || !activitiesLoaded) return <LoadingState label="Loading favorites…" />;
 
   const favoriteLessons = lessons.filter((l) => l.favorite && !l.archived);
   const favoriteActivities = activities.filter((a) => a.favorite);

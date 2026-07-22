@@ -7,6 +7,7 @@ import { useLessonPlans } from "@/lib/store";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { FiltersBar, type LessonFilters } from "@/components/lessons/filters-bar";
 import { LessonTable } from "@/components/lessons/lesson-table";
 import { LessonCardGrid } from "@/components/lessons/lesson-card-grid";
@@ -15,7 +16,7 @@ import type { LiturgicalSeason } from "@/lib/types";
 function LessonsLibraryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { lessons, duplicateLesson, archiveLessons, archiveLesson, deleteLesson, toggleFavorite } = useLessonPlans();
+  const { lessons, loaded, duplicateLesson, archiveLessons, archiveLesson, deleteLesson, toggleFavorite } = useLessonPlans();
   const showToast = useToast();
 
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
@@ -96,6 +97,8 @@ function LessonsLibraryContent() {
   }
 
   const hasAnyLessons = lessons.filter((l) => !l.archived).length > 0;
+
+  if (!loaded) return <LoadingState label="Loading lesson plans…" />;
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10 lg:px-10">

@@ -10,6 +10,7 @@ import { TEMPLATES } from "@/lib/data/templates";
 import type { LessonPlan } from "@/lib/types";
 import { StatusBadge, ActivityCategoryTag, MinistryTag } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 
 function lessonMatches(lesson: LessonPlan, q: string): boolean {
   if (
@@ -53,7 +54,7 @@ function SearchContent() {
 
   const totalResults = matchedLessons.length + matchedActivities.length + matchedTemplates.length;
 
-  if (!lessonsLoaded || !activitiesLoaded) return null;
+  if (!lessonsLoaded || !activitiesLoaded) return <LoadingState label="Loading search…" />;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10 lg:px-10">

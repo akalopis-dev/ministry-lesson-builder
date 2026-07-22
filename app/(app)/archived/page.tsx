@@ -5,13 +5,16 @@ import { Archive, RotateCcw, Trash2 } from "lucide-react";
 import { useLessonPlans } from "@/lib/store";
 import { StatusBadge, MinistryTag } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 
 export default function ArchivedPage() {
-  const { lessons, saveLesson, deleteLesson } = useLessonPlans();
+  const { lessons, loaded, saveLesson, deleteLesson } = useLessonPlans();
   const showToast = useToast();
   const archived = lessons.filter((l) => l.archived);
+
+  if (!loaded) return <LoadingState label="Loading archived lessons…" />;
 
   function restore(lesson: (typeof archived)[number]) {
     saveLesson({ ...lesson, archived: false });
