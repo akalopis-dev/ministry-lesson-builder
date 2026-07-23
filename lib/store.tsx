@@ -4,11 +4,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { makeId, type LessonPlan } from "@/lib/types";
 import { fetchTable, upsertRow, deleteRow } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { isTrashExpired } from "@/lib/trash";
 
 const DRAFT_KEY_PREFIX = "mlb.draft.";
 
 interface LessonPlansContextValue {
   lessons: LessonPlan[];
+  trashedLessons: LessonPlan[];
   loaded: boolean;
   getLesson: (id: string) => LessonPlan | undefined;
   saveLesson: (lesson: LessonPlan) => void;
@@ -16,6 +18,8 @@ interface LessonPlansContextValue {
   archiveLesson: (id: string) => void;
   archiveLessons: (ids: string[]) => void;
   deleteLesson: (id: string) => void;
+  restoreLesson: (id: string) => void;
+  permanentlyDeleteLesson: (id: string) => void;
   toggleFavorite: (id: string) => void;
   saveDraft: (draft: LessonPlan) => void;
   getDraft: (id: string) => LessonPlan | undefined;
@@ -31,7 +35,7 @@ export function useLessonPlans(): LessonPlansContextValue {
 }
 
 export function LessonPlansProvider({ children }: { children: React.ReactNode }) {
-  const [lessons, setLessons] = useState<LessonPlan[]>([]);
+  const [allLessons, setAllLessons] = useState<LessonPlan[]>([]);
   const [loaded, setLoaded] = useState(false);
   const showToast = useToast();
 
@@ -39,15 +43,19 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
     let cancelled = false;
     fetchTable<LessonPlan>("lessons")
       .then((data) => {
+        if (cancelled) return;
+        // Trash past its retention window gets purged for good, everything else kept.
+        const expired = data.filter((l) => l.trashedAt && isTrashExpired(l.trashedAt));
+        for (const l of expired) deleteRow("lessons", l.id).catch(() => {});
+        const expiredIds = new Set(expired.map((l) => l.id));
+        const keep = data.filter((l) => !expiredIds.has(l.id));
         // Merge rather than replace: a mutation (e.g. creating a lesson from a
         // template) can complete locally before this initial fetch resolves —
         // replacing state outright would wipe it back out.
-        if (!cancelled) {
-          setLessons((prev) => {
-            const knownIds = new Set(prev.map((l) => l.id));
-            return [...prev, ...data.filter((l) => !knownIds.has(l.id))];
-          });
-        }
+        setAllLessons((prev) => {
+          const knownIds = new Set(prev.map((l) => l.id));
+          return [...prev, ...keep.filter((l) => !knownIds.has(l.id))];
+        });
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load lesson plans — check your connection");
@@ -60,19 +68,22 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
     };
   }, [showToast]);
 
-  const getLesson = useCallback((id: string) => lessons.find((l) => l.id === id), [lessons]);
+  const lessons = useMemo(() => allLessons.filter((l) => !l.trashedAt), [allLessons]);
+  const trashedLessons = useMemo(() => allLessons.filter((l) => !!l.trashedAt), [allLessons]);
+
+  const getLesson = useCallback((id: string) => allLessons.find((l) => l.id === id), [allLessons]);
 
   const saveLesson = useCallback(
     (lesson: LessonPlan) => {
       const updated = { ...lesson, updatedAt: new Date().toISOString() };
       let previous: LessonPlan[] = [];
-      setLessons((prev) => {
+      setAllLessons((prev) => {
         previous = prev;
         const exists = prev.some((l) => l.id === lesson.id);
         return exists ? prev.map((l) => (l.id === lesson.id ? updated : l)) : [updated, ...prev];
       });
       upsertRow("lessons", updated).catch(() => {
-        setLessons(previous);
+        setAllLessons(previous);
         showToast("Couldn't save the lesson — try again");
       });
     },
@@ -81,7 +92,7 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
 
   const duplicateLesson = useCallback(
     (id: string) => {
-      const original = lessons.find((l) => l.id === id);
+      const original = allLessons.find((l) => l.id === id);
       if (!original) return undefined;
       const now = new Date().toISOString();
       const copy: LessonPlan = {
@@ -91,25 +102,26 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
         status: "Draft",
         date: undefined,
         isSample: false,
+        trashedAt: undefined,
         createdAt: now,
         updatedAt: now,
         revisions: [{ id: makeId("rev"), label: "Duplicated from existing lesson", timestamp: now }],
       };
-      setLessons((prev) => [copy, ...prev]);
+      setAllLessons((prev) => [copy, ...prev]);
       upsertRow("lessons", copy).catch(() => {
-        setLessons((prev) => prev.filter((l) => l.id !== copy.id));
+        setAllLessons((prev) => prev.filter((l) => l.id !== copy.id));
         showToast("Couldn't duplicate the lesson — try again");
       });
       return copy;
     },
-    [lessons, showToast]
+    [allLessons, showToast]
   );
 
   const archiveLesson = useCallback(
     (id: string) => {
       let previous: LessonPlan[] = [];
       let updated: LessonPlan | undefined;
-      setLessons((prev) => {
+      setAllLessons((prev) => {
         previous = prev;
         return prev.map((l) => {
           if (l.id !== id) return l;
@@ -119,7 +131,7 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
       });
       if (updated) {
         upsertRow("lessons", updated).catch(() => {
-          setLessons(previous);
+          setAllLessons(previous);
           showToast("Couldn't archive the lesson — try again");
         });
       }
@@ -132,14 +144,14 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
       const idSet = new Set(ids);
       let previous: LessonPlan[] = [];
       let updatedLessons: LessonPlan[] = [];
-      setLessons((prev) => {
+      setAllLessons((prev) => {
         previous = prev;
         const next = prev.map((l) => (idSet.has(l.id) ? { ...l, archived: true } : l));
         updatedLessons = next.filter((l) => idSet.has(l.id));
         return next;
       });
       Promise.all(updatedLessons.map((l) => upsertRow("lessons", l))).catch(() => {
-        setLessons(previous);
+        setAllLessons(previous);
         showToast("Couldn't archive those lessons — try again");
       });
     },
@@ -149,13 +161,57 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
   const deleteLesson = useCallback(
     (id: string) => {
       let previous: LessonPlan[] = [];
-      setLessons((prev) => {
+      let updated: LessonPlan | undefined;
+      setAllLessons((prev) => {
+        previous = prev;
+        return prev.map((l) => {
+          if (l.id !== id) return l;
+          updated = { ...l, trashedAt: new Date().toISOString() };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("lessons", updated).catch(() => {
+          setAllLessons(previous);
+          showToast("Couldn't move the lesson to Trash — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const restoreLesson = useCallback(
+    (id: string) => {
+      let previous: LessonPlan[] = [];
+      let updated: LessonPlan | undefined;
+      setAllLessons((prev) => {
+        previous = prev;
+        return prev.map((l) => {
+          if (l.id !== id) return l;
+          updated = { ...l, trashedAt: undefined };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("lessons", updated).catch(() => {
+          setAllLessons(previous);
+          showToast("Couldn't restore the lesson — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const permanentlyDeleteLesson = useCallback(
+    (id: string) => {
+      let previous: LessonPlan[] = [];
+      setAllLessons((prev) => {
         previous = prev;
         return prev.filter((l) => l.id !== id);
       });
       deleteRow("lessons", id).catch(() => {
-        setLessons(previous);
-        showToast("Couldn't delete the lesson — try again");
+        setAllLessons(previous);
+        showToast("Couldn't permanently delete the lesson — try again");
       });
     },
     [showToast]
@@ -165,7 +221,7 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
     (id: string) => {
       let previous: LessonPlan[] = [];
       let updated: LessonPlan | undefined;
-      setLessons((prev) => {
+      setAllLessons((prev) => {
         previous = prev;
         return prev.map((l) => {
           if (l.id !== id) return l;
@@ -175,7 +231,7 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
       });
       if (updated) {
         upsertRow("lessons", updated).catch(() => {
-          setLessons(previous);
+          setAllLessons(previous);
           showToast("Couldn't update favorites — try again");
         });
       }
@@ -211,6 +267,7 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
   const value = useMemo(
     () => ({
       lessons,
+      trashedLessons,
       loaded,
       getLesson,
       saveLesson,
@@ -218,12 +275,30 @@ export function LessonPlansProvider({ children }: { children: React.ReactNode })
       archiveLesson,
       archiveLessons,
       deleteLesson,
+      restoreLesson,
+      permanentlyDeleteLesson,
       toggleFavorite,
       saveDraft,
       getDraft,
       clearDraft,
     }),
-    [lessons, loaded, getLesson, saveLesson, duplicateLesson, archiveLesson, archiveLessons, deleteLesson, toggleFavorite, saveDraft, getDraft, clearDraft]
+    [
+      lessons,
+      trashedLessons,
+      loaded,
+      getLesson,
+      saveLesson,
+      duplicateLesson,
+      archiveLesson,
+      archiveLessons,
+      deleteLesson,
+      restoreLesson,
+      permanentlyDeleteLesson,
+      toggleFavorite,
+      saveDraft,
+      getDraft,
+      clearDraft,
+    ]
   );
 
   return <LessonPlansContext.Provider value={value}>{children}</LessonPlansContext.Provider>;

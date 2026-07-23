@@ -307,6 +307,7 @@ export interface Activity {
   adaptationNote?: string;
   tags?: string[];
   favorite?: boolean;
+  trashedAt?: string;
 }
 
 export interface Collection {
@@ -316,6 +317,7 @@ export interface Collection {
   lessonIds: string[];
   activityIds: string[];
   createdAt: string;
+  trashedAt?: string;
 }
 
 export type ScriptureCategory =
@@ -346,6 +348,7 @@ export interface ScripturePassage {
   source?: string;
   tags?: string[];
   favorite?: boolean;
+  trashedAt?: string;
 }
 
 export type PrayerCategory =
@@ -374,6 +377,7 @@ export interface Prayer {
   source?: string;
   tags?: string[];
   favorite?: boolean;
+  trashedAt?: string;
 }
 
 export interface LessonPlan {
@@ -413,6 +417,7 @@ export interface LessonPlan {
   createdAt: string;
   updatedAt: string;
   location?: string;
+  trashedAt?: string;
 }
 
 export function emptySafety(): SafetyAccessibility {

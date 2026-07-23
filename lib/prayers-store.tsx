@@ -4,14 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { makeId, type Prayer } from "@/lib/types";
 import { fetchTable, upsertRow, deleteRow } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { isTrashExpired } from "@/lib/trash";
 
 interface PrayersContextValue {
   prayers: Prayer[];
+  trashedPrayers: Prayer[];
   loaded: boolean;
   getPrayer: (id: string) => Prayer | undefined;
   addPrayer: (prayer: Omit<Prayer, "id">) => Prayer;
   updatePrayer: (prayer: Prayer) => void;
   deletePrayer: (id: string) => void;
+  restorePrayer: (id: string) => void;
+  permanentlyDeletePrayer: (id: string) => void;
 }
 
 const PrayersContext = createContext<PrayersContextValue | null>(null);
@@ -23,7 +27,7 @@ export function usePrayers(): PrayersContextValue {
 }
 
 export function PrayersProvider({ children }: { children: React.ReactNode }) {
-  const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [allPrayers, setAllPrayers] = useState<Prayer[]>([]);
   const [loaded, setLoaded] = useState(false);
   const showToast = useToast();
 
@@ -31,12 +35,15 @@ export function PrayersProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     fetchTable<Prayer>("prayers")
       .then((data) => {
-        if (!cancelled) {
-          setPrayers((prev) => {
-            const knownIds = new Set(prev.map((p) => p.id));
-            return [...prev, ...data.filter((p) => !knownIds.has(p.id))];
-          });
-        }
+        if (cancelled) return;
+        const expired = data.filter((p) => p.trashedAt && isTrashExpired(p.trashedAt));
+        for (const p of expired) deleteRow("prayers", p.id).catch(() => {});
+        const expiredIds = new Set(expired.map((p) => p.id));
+        const keep = data.filter((p) => !expiredIds.has(p.id));
+        setAllPrayers((prev) => {
+          const knownIds = new Set(prev.map((p) => p.id));
+          return [...prev, ...keep.filter((p) => !knownIds.has(p.id))];
+        });
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load the Prayer Library — check your connection");
@@ -49,14 +56,17 @@ export function PrayersProvider({ children }: { children: React.ReactNode }) {
     };
   }, [showToast]);
 
-  const getPrayer = useCallback((id: string) => prayers.find((p) => p.id === id), [prayers]);
+  const prayers = useMemo(() => allPrayers.filter((p) => !p.trashedAt), [allPrayers]);
+  const trashedPrayers = useMemo(() => allPrayers.filter((p) => !!p.trashedAt), [allPrayers]);
+
+  const getPrayer = useCallback((id: string) => allPrayers.find((p) => p.id === id), [allPrayers]);
 
   const addPrayer = useCallback(
     (prayer: Omit<Prayer, "id">) => {
       const created: Prayer = { ...prayer, id: makeId("prayer") };
-      setPrayers((prev) => [created, ...prev]);
+      setAllPrayers((prev) => [created, ...prev]);
       upsertRow("prayers", created).catch(() => {
-        setPrayers((prev) => prev.filter((p) => p.id !== created.id));
+        setAllPrayers((prev) => prev.filter((p) => p.id !== created.id));
         showToast("Couldn't save the prayer — try again");
       });
       return created;
@@ -67,12 +77,12 @@ export function PrayersProvider({ children }: { children: React.ReactNode }) {
   const updatePrayer = useCallback(
     (prayer: Prayer) => {
       let previous: Prayer[] = [];
-      setPrayers((prev) => {
+      setAllPrayers((prev) => {
         previous = prev;
         return prev.map((p) => (p.id === prayer.id ? prayer : p));
       });
       upsertRow("prayers", prayer).catch(() => {
-        setPrayers(previous);
+        setAllPrayers(previous);
         showToast("Couldn't save changes — try again");
       });
     },
@@ -82,21 +92,85 @@ export function PrayersProvider({ children }: { children: React.ReactNode }) {
   const deletePrayer = useCallback(
     (id: string) => {
       let previous: Prayer[] = [];
-      setPrayers((prev) => {
+      let updated: Prayer | undefined;
+      setAllPrayers((prev) => {
+        previous = prev;
+        return prev.map((p) => {
+          if (p.id !== id) return p;
+          updated = { ...p, trashedAt: new Date().toISOString() };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("prayers", updated).catch(() => {
+          setAllPrayers(previous);
+          showToast("Couldn't move the prayer to Trash — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const restorePrayer = useCallback(
+    (id: string) => {
+      let previous: Prayer[] = [];
+      let updated: Prayer | undefined;
+      setAllPrayers((prev) => {
+        previous = prev;
+        return prev.map((p) => {
+          if (p.id !== id) return p;
+          updated = { ...p, trashedAt: undefined };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("prayers", updated).catch(() => {
+          setAllPrayers(previous);
+          showToast("Couldn't restore the prayer — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const permanentlyDeletePrayer = useCallback(
+    (id: string) => {
+      let previous: Prayer[] = [];
+      setAllPrayers((prev) => {
         previous = prev;
         return prev.filter((p) => p.id !== id);
       });
       deleteRow("prayers", id).catch(() => {
-        setPrayers(previous);
-        showToast("Couldn't delete — try again");
+        setAllPrayers(previous);
+        showToast("Couldn't permanently delete the prayer — try again");
       });
     },
     [showToast]
   );
 
   const value = useMemo(
-    () => ({ prayers, loaded, getPrayer, addPrayer, updatePrayer, deletePrayer }),
-    [prayers, loaded, getPrayer, addPrayer, updatePrayer, deletePrayer]
+    () => ({
+      prayers,
+      trashedPrayers,
+      loaded,
+      getPrayer,
+      addPrayer,
+      updatePrayer,
+      deletePrayer,
+      restorePrayer,
+      permanentlyDeletePrayer,
+    }),
+    [
+      prayers,
+      trashedPrayers,
+      loaded,
+      getPrayer,
+      addPrayer,
+      updatePrayer,
+      deletePrayer,
+      restorePrayer,
+      permanentlyDeletePrayer,
+    ]
   );
 
   return <PrayersContext.Provider value={value}>{children}</PrayersContext.Provider>;

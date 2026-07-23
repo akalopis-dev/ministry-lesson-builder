@@ -63,9 +63,9 @@ export default function PrayersPage() {
   }
 
   function handleDelete(prayer: Prayer) {
-    if (window.confirm(`Remove "${prayer.title}" from the Prayer Library?`)) {
+    if (window.confirm(`Move "${prayer.title}" to Trash? You can restore it from Trash for 30 days.`)) {
       deletePrayer(prayer.id);
-      showToast("Prayer removed");
+      showToast("Moved to Trash");
     }
   }
 

@@ -65,7 +65,11 @@ export default function CollectionDetailPage() {
             variant="danger"
             size="sm"
             onClick={() => {
-              if (window.confirm(`Delete the "${collection.name}" collection? This does not delete the lessons or activities inside it.`)) {
+              if (
+                window.confirm(
+                  `Move the "${collection.name}" collection to Trash? This does not delete the lessons or activities inside it. You can restore it from Trash for 30 days.`
+                )
+              ) {
                 deleteCollection(collection.id);
                 router.push("/collections");
               }

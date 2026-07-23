@@ -63,9 +63,9 @@ export default function ScripturePage() {
   }
 
   function handleDelete(passage: ScripturePassage) {
-    if (window.confirm(`Remove "${passage.title}" from the Scripture Library?`)) {
+    if (window.confirm(`Move "${passage.title}" to Trash? You can restore it from Trash for 30 days.`)) {
       deletePassage(passage.id);
-      showToast("Passage removed");
+      showToast("Moved to Trash");
     }
   }
 

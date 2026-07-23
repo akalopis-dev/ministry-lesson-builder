@@ -13,6 +13,7 @@ export interface LessonTemplate {
   ministry: Ministry;
   durationMinutes: number;
   blocks: TemplateBlock[];
+  trashedAt?: string;
 }
 
 export const TEMPLATES: LessonTemplate[] = [

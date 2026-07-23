@@ -4,14 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { makeId, type Collection } from "@/lib/types";
 import { fetchTable, upsertRow, deleteRow } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { isTrashExpired } from "@/lib/trash";
 
 interface CollectionsContextValue {
   collections: Collection[];
+  trashedCollections: Collection[];
   loaded: boolean;
   getCollection: (id: string) => Collection | undefined;
   addCollection: (name: string, description: string) => Collection;
   updateCollection: (collection: Collection) => void;
   deleteCollection: (id: string) => void;
+  restoreCollection: (id: string) => void;
+  permanentlyDeleteCollection: (id: string) => void;
   addLessonToCollection: (collectionId: string, lessonId: string) => void;
   removeLessonFromCollection: (collectionId: string, lessonId: string) => void;
   addActivityToCollection: (collectionId: string, activityId: string) => void;
@@ -27,7 +31,7 @@ export function useCollections(): CollectionsContextValue {
 }
 
 export function CollectionsProvider({ children }: { children: React.ReactNode }) {
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [allCollections, setAllCollections] = useState<Collection[]>([]);
   const [loaded, setLoaded] = useState(false);
   const showToast = useToast();
 
@@ -35,14 +39,17 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     let cancelled = false;
     fetchTable<Collection>("collections")
       .then((data) => {
+        if (cancelled) return;
+        const expired = data.filter((c) => c.trashedAt && isTrashExpired(c.trashedAt));
+        for (const c of expired) deleteRow("collections", c.id).catch(() => {});
+        const expiredIds = new Set(expired.map((c) => c.id));
+        const keep = data.filter((c) => !expiredIds.has(c.id));
         // Merge rather than replace: a mutation can complete locally before this
         // initial fetch resolves — replacing state outright would wipe it back out.
-        if (!cancelled) {
-          setCollections((prev) => {
-            const knownIds = new Set(prev.map((c) => c.id));
-            return [...prev, ...data.filter((c) => !knownIds.has(c.id))];
-          });
-        }
+        setAllCollections((prev) => {
+          const knownIds = new Set(prev.map((c) => c.id));
+          return [...prev, ...keep.filter((c) => !knownIds.has(c.id))];
+        });
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load collections — check your connection");
@@ -55,7 +62,10 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     };
   }, [showToast]);
 
-  const getCollection = useCallback((id: string) => collections.find((c) => c.id === id), [collections]);
+  const collections = useMemo(() => allCollections.filter((c) => !c.trashedAt), [allCollections]);
+  const trashedCollections = useMemo(() => allCollections.filter((c) => !!c.trashedAt), [allCollections]);
+
+  const getCollection = useCallback((id: string) => allCollections.find((c) => c.id === id), [allCollections]);
 
   // Shared helper: apply `updater` to the collection matching `collectionId`, optimistically,
   // then persist just that row — rolling the whole list back on failure.
@@ -63,7 +73,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     (collectionId: string, updater: (c: Collection) => Collection, failureMessage: string) => {
       let previous: Collection[] = [];
       let updated: Collection | undefined;
-      setCollections((prev) => {
+      setAllCollections((prev) => {
         previous = prev;
         return prev.map((c) => {
           if (c.id !== collectionId) return c;
@@ -73,7 +83,7 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
       });
       if (updated) {
         upsertRow("collections", updated).catch(() => {
-          setCollections(previous);
+          setAllCollections(previous);
           showToast(failureMessage);
         });
       }
@@ -91,9 +101,9 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
         activityIds: [],
         createdAt: new Date().toISOString(),
       };
-      setCollections((prev) => [created, ...prev]);
+      setAllCollections((prev) => [created, ...prev]);
       upsertRow("collections", created).catch(() => {
-        setCollections((prev) => prev.filter((c) => c.id !== created.id));
+        setAllCollections((prev) => prev.filter((c) => c.id !== created.id));
         showToast("Couldn't create the collection — try again");
       });
       return created;
@@ -104,12 +114,12 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const updateCollection = useCallback(
     (collection: Collection) => {
       let previous: Collection[] = [];
-      setCollections((prev) => {
+      setAllCollections((prev) => {
         previous = prev;
         return prev.map((c) => (c.id === collection.id ? collection : c));
       });
       upsertRow("collections", collection).catch(() => {
-        setCollections(previous);
+        setAllCollections(previous);
         showToast("Couldn't save the collection — try again");
       });
     },
@@ -117,15 +127,30 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   );
 
   const deleteCollection = useCallback(
+    (id: string) =>
+      mutateCollection(
+        id,
+        (c) => ({ ...c, trashedAt: new Date().toISOString() }),
+        "Couldn't move the collection to Trash — try again"
+      ),
+    [mutateCollection]
+  );
+
+  const restoreCollection = useCallback(
+    (id: string) => mutateCollection(id, (c) => ({ ...c, trashedAt: undefined }), "Couldn't restore the collection — try again"),
+    [mutateCollection]
+  );
+
+  const permanentlyDeleteCollection = useCallback(
     (id: string) => {
       let previous: Collection[] = [];
-      setCollections((prev) => {
+      setAllCollections((prev) => {
         previous = prev;
         return prev.filter((c) => c.id !== id);
       });
       deleteRow("collections", id).catch(() => {
-        setCollections(previous);
-        showToast("Couldn't delete the collection — try again");
+        setAllCollections(previous);
+        showToast("Couldn't permanently delete the collection — try again");
       });
     },
     [showToast]
@@ -174,11 +199,14 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
   const value = useMemo(
     () => ({
       collections,
+      trashedCollections,
       loaded,
       getCollection,
       addCollection,
       updateCollection,
       deleteCollection,
+      restoreCollection,
+      permanentlyDeleteCollection,
       addLessonToCollection,
       removeLessonFromCollection,
       addActivityToCollection,
@@ -186,11 +214,14 @@ export function CollectionsProvider({ children }: { children: React.ReactNode })
     }),
     [
       collections,
+      trashedCollections,
       loaded,
       getCollection,
       addCollection,
       updateCollection,
       deleteCollection,
+      restoreCollection,
+      permanentlyDeleteCollection,
       addLessonToCollection,
       removeLessonFromCollection,
       addActivityToCollection,

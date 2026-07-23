@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Star,
   Search,
+  Trash2,
 } from "lucide-react";
 
 export interface NavItem {
@@ -51,6 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Search", href: "/search", icon: Search },
       { label: "Calendar", href: "/calendar", icon: CalendarDays },
       { label: "Archived", href: "/archived", icon: Archive },
+      { label: "Trash", href: "/trash", icon: Trash2 },
     ],
   },
 ];

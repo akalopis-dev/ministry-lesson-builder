@@ -4,14 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { makeId, type Activity } from "@/lib/types";
 import { fetchTable, upsertRow, deleteRow } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { isTrashExpired } from "@/lib/trash";
 
 interface ActivitiesContextValue {
   activities: Activity[];
+  trashedActivities: Activity[];
   loaded: boolean;
   getActivity: (id: string) => Activity | undefined;
   addActivity: (activity: Omit<Activity, "id">) => Activity;
   updateActivity: (activity: Activity) => void;
   deleteActivity: (id: string) => void;
+  restoreActivity: (id: string) => void;
+  permanentlyDeleteActivity: (id: string) => void;
 }
 
 const ActivitiesContext = createContext<ActivitiesContextValue | null>(null);
@@ -23,7 +27,7 @@ export function useActivities(): ActivitiesContextValue {
 }
 
 export function ActivitiesProvider({ children }: { children: React.ReactNode }) {
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [allActivities, setAllActivities] = useState<Activity[]>([]);
   const [loaded, setLoaded] = useState(false);
   const showToast = useToast();
 
@@ -31,14 +35,17 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     let cancelled = false;
     fetchTable<Activity>("activities")
       .then((data) => {
+        if (cancelled) return;
+        const expired = data.filter((a) => a.trashedAt && isTrashExpired(a.trashedAt));
+        for (const a of expired) deleteRow("activities", a.id).catch(() => {});
+        const expiredIds = new Set(expired.map((a) => a.id));
+        const keep = data.filter((a) => !expiredIds.has(a.id));
         // Merge rather than replace: a mutation can complete locally before this
         // initial fetch resolves — replacing state outright would wipe it back out.
-        if (!cancelled) {
-          setActivities((prev) => {
-            const knownIds = new Set(prev.map((a) => a.id));
-            return [...prev, ...data.filter((a) => !knownIds.has(a.id))];
-          });
-        }
+        setAllActivities((prev) => {
+          const knownIds = new Set(prev.map((a) => a.id));
+          return [...prev, ...keep.filter((a) => !knownIds.has(a.id))];
+        });
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load activities — check your connection");
@@ -51,14 +58,17 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
     };
   }, [showToast]);
 
-  const getActivity = useCallback((id: string) => activities.find((a) => a.id === id), [activities]);
+  const activities = useMemo(() => allActivities.filter((a) => !a.trashedAt), [allActivities]);
+  const trashedActivities = useMemo(() => allActivities.filter((a) => !!a.trashedAt), [allActivities]);
+
+  const getActivity = useCallback((id: string) => allActivities.find((a) => a.id === id), [allActivities]);
 
   const addActivity = useCallback(
     (activity: Omit<Activity, "id">) => {
       const created: Activity = { ...activity, id: makeId("activity") };
-      setActivities((prev) => [created, ...prev]);
+      setAllActivities((prev) => [created, ...prev]);
       upsertRow("activities", created).catch(() => {
-        setActivities((prev) => prev.filter((a) => a.id !== created.id));
+        setAllActivities((prev) => prev.filter((a) => a.id !== created.id));
         showToast("Couldn't save the activity — try again");
       });
       return created;
@@ -69,12 +79,12 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   const updateActivity = useCallback(
     (activity: Activity) => {
       let previous: Activity[] = [];
-      setActivities((prev) => {
+      setAllActivities((prev) => {
         previous = prev;
         return prev.map((a) => (a.id === activity.id ? activity : a));
       });
       upsertRow("activities", activity).catch(() => {
-        setActivities(previous);
+        setAllActivities(previous);
         showToast("Couldn't save changes — try again");
       });
     },
@@ -84,21 +94,85 @@ export function ActivitiesProvider({ children }: { children: React.ReactNode }) 
   const deleteActivity = useCallback(
     (id: string) => {
       let previous: Activity[] = [];
-      setActivities((prev) => {
+      let updated: Activity | undefined;
+      setAllActivities((prev) => {
+        previous = prev;
+        return prev.map((a) => {
+          if (a.id !== id) return a;
+          updated = { ...a, trashedAt: new Date().toISOString() };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("activities", updated).catch(() => {
+          setAllActivities(previous);
+          showToast("Couldn't move the activity to Trash — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const restoreActivity = useCallback(
+    (id: string) => {
+      let previous: Activity[] = [];
+      let updated: Activity | undefined;
+      setAllActivities((prev) => {
+        previous = prev;
+        return prev.map((a) => {
+          if (a.id !== id) return a;
+          updated = { ...a, trashedAt: undefined };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("activities", updated).catch(() => {
+          setAllActivities(previous);
+          showToast("Couldn't restore the activity — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const permanentlyDeleteActivity = useCallback(
+    (id: string) => {
+      let previous: Activity[] = [];
+      setAllActivities((prev) => {
         previous = prev;
         return prev.filter((a) => a.id !== id);
       });
       deleteRow("activities", id).catch(() => {
-        setActivities(previous);
-        showToast("Couldn't delete — try again");
+        setAllActivities(previous);
+        showToast("Couldn't permanently delete the activity — try again");
       });
     },
     [showToast]
   );
 
   const value = useMemo(
-    () => ({ activities, loaded, getActivity, addActivity, updateActivity, deleteActivity }),
-    [activities, loaded, getActivity, addActivity, updateActivity, deleteActivity]
+    () => ({
+      activities,
+      trashedActivities,
+      loaded,
+      getActivity,
+      addActivity,
+      updateActivity,
+      deleteActivity,
+      restoreActivity,
+      permanentlyDeleteActivity,
+    }),
+    [
+      activities,
+      trashedActivities,
+      loaded,
+      getActivity,
+      addActivity,
+      updateActivity,
+      deleteActivity,
+      restoreActivity,
+      permanentlyDeleteActivity,
+    ]
   );
 
   return <ActivitiesContext.Provider value={value}>{children}</ActivitiesContext.Provider>;

@@ -63,9 +63,9 @@ function LessonDetailContent() {
         router.push("/lessons");
       }}
       onDelete={() => {
-        if (window.confirm("Delete this lesson plan? This cannot be undone.")) {
+        if (window.confirm("Move this lesson plan to Trash? You can restore it from Trash for 30 days.")) {
           deleteLesson(lesson.id);
-          showToast("Lesson deleted");
+          showToast("Moved to Trash");
           router.push("/lessons");
         }
       }}

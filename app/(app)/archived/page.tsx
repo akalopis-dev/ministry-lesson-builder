@@ -23,7 +23,7 @@ export default function ArchivedPage() {
 
   function remove(lessonId: string) {
     deleteLesson(lessonId);
-    showToast("Lesson deleted");
+    showToast("Moved to Trash");
   }
 
   return (

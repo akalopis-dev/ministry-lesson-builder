@@ -4,14 +4,18 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { makeId, type ScripturePassage } from "@/lib/types";
 import { fetchTable, upsertRow, deleteRow } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { isTrashExpired } from "@/lib/trash";
 
 interface ScriptureContextValue {
   passages: ScripturePassage[];
+  trashedPassages: ScripturePassage[];
   loaded: boolean;
   getPassage: (id: string) => ScripturePassage | undefined;
   addPassage: (passage: Omit<ScripturePassage, "id">) => ScripturePassage;
   updatePassage: (passage: ScripturePassage) => void;
   deletePassage: (id: string) => void;
+  restorePassage: (id: string) => void;
+  permanentlyDeletePassage: (id: string) => void;
 }
 
 const ScriptureContext = createContext<ScriptureContextValue | null>(null);
@@ -23,7 +27,7 @@ export function useScripture(): ScriptureContextValue {
 }
 
 export function ScriptureProvider({ children }: { children: React.ReactNode }) {
-  const [passages, setPassages] = useState<ScripturePassage[]>([]);
+  const [allPassages, setAllPassages] = useState<ScripturePassage[]>([]);
   const [loaded, setLoaded] = useState(false);
   const showToast = useToast();
 
@@ -31,12 +35,15 @@ export function ScriptureProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     fetchTable<ScripturePassage>("scripture")
       .then((data) => {
-        if (!cancelled) {
-          setPassages((prev) => {
-            const knownIds = new Set(prev.map((p) => p.id));
-            return [...prev, ...data.filter((p) => !knownIds.has(p.id))];
-          });
-        }
+        if (cancelled) return;
+        const expired = data.filter((p) => p.trashedAt && isTrashExpired(p.trashedAt));
+        for (const p of expired) deleteRow("scripture", p.id).catch(() => {});
+        const expiredIds = new Set(expired.map((p) => p.id));
+        const keep = data.filter((p) => !expiredIds.has(p.id));
+        setAllPassages((prev) => {
+          const knownIds = new Set(prev.map((p) => p.id));
+          return [...prev, ...keep.filter((p) => !knownIds.has(p.id))];
+        });
       })
       .catch(() => {
         if (!cancelled) showToast("Couldn't load the Scripture Library — check your connection");
@@ -49,14 +56,17 @@ export function ScriptureProvider({ children }: { children: React.ReactNode }) {
     };
   }, [showToast]);
 
-  const getPassage = useCallback((id: string) => passages.find((p) => p.id === id), [passages]);
+  const passages = useMemo(() => allPassages.filter((p) => !p.trashedAt), [allPassages]);
+  const trashedPassages = useMemo(() => allPassages.filter((p) => !!p.trashedAt), [allPassages]);
+
+  const getPassage = useCallback((id: string) => allPassages.find((p) => p.id === id), [allPassages]);
 
   const addPassage = useCallback(
     (passage: Omit<ScripturePassage, "id">) => {
       const created: ScripturePassage = { ...passage, id: makeId("scripture") };
-      setPassages((prev) => [created, ...prev]);
+      setAllPassages((prev) => [created, ...prev]);
       upsertRow("scripture", created).catch(() => {
-        setPassages((prev) => prev.filter((p) => p.id !== created.id));
+        setAllPassages((prev) => prev.filter((p) => p.id !== created.id));
         showToast("Couldn't save the passage — try again");
       });
       return created;
@@ -67,12 +77,12 @@ export function ScriptureProvider({ children }: { children: React.ReactNode }) {
   const updatePassage = useCallback(
     (passage: ScripturePassage) => {
       let previous: ScripturePassage[] = [];
-      setPassages((prev) => {
+      setAllPassages((prev) => {
         previous = prev;
         return prev.map((p) => (p.id === passage.id ? passage : p));
       });
       upsertRow("scripture", passage).catch(() => {
-        setPassages(previous);
+        setAllPassages(previous);
         showToast("Couldn't save changes — try again");
       });
     },
@@ -82,21 +92,85 @@ export function ScriptureProvider({ children }: { children: React.ReactNode }) {
   const deletePassage = useCallback(
     (id: string) => {
       let previous: ScripturePassage[] = [];
-      setPassages((prev) => {
+      let updated: ScripturePassage | undefined;
+      setAllPassages((prev) => {
+        previous = prev;
+        return prev.map((p) => {
+          if (p.id !== id) return p;
+          updated = { ...p, trashedAt: new Date().toISOString() };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("scripture", updated).catch(() => {
+          setAllPassages(previous);
+          showToast("Couldn't move the passage to Trash — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const restorePassage = useCallback(
+    (id: string) => {
+      let previous: ScripturePassage[] = [];
+      let updated: ScripturePassage | undefined;
+      setAllPassages((prev) => {
+        previous = prev;
+        return prev.map((p) => {
+          if (p.id !== id) return p;
+          updated = { ...p, trashedAt: undefined };
+          return updated;
+        });
+      });
+      if (updated) {
+        upsertRow("scripture", updated).catch(() => {
+          setAllPassages(previous);
+          showToast("Couldn't restore the passage — try again");
+        });
+      }
+    },
+    [showToast]
+  );
+
+  const permanentlyDeletePassage = useCallback(
+    (id: string) => {
+      let previous: ScripturePassage[] = [];
+      setAllPassages((prev) => {
         previous = prev;
         return prev.filter((p) => p.id !== id);
       });
       deleteRow("scripture", id).catch(() => {
-        setPassages(previous);
-        showToast("Couldn't delete — try again");
+        setAllPassages(previous);
+        showToast("Couldn't permanently delete the passage — try again");
       });
     },
     [showToast]
   );
 
   const value = useMemo(
-    () => ({ passages, loaded, getPassage, addPassage, updatePassage, deletePassage }),
-    [passages, loaded, getPassage, addPassage, updatePassage, deletePassage]
+    () => ({
+      passages,
+      trashedPassages,
+      loaded,
+      getPassage,
+      addPassage,
+      updatePassage,
+      deletePassage,
+      restorePassage,
+      permanentlyDeletePassage,
+    }),
+    [
+      passages,
+      trashedPassages,
+      loaded,
+      getPassage,
+      addPassage,
+      updatePassage,
+      deletePassage,
+      restorePassage,
+      permanentlyDeletePassage,
+    ]
   );
 
   return <ScriptureContext.Provider value={value}>{children}</ScriptureContext.Provider>;

@@ -79,9 +79,9 @@ function LessonsLibraryContent() {
   }
 
   function handleDelete(id: string) {
-    if (window.confirm("Delete this lesson plan? This cannot be undone.")) {
+    if (window.confirm("Move this lesson plan to Trash? You can restore it from Trash for 30 days.")) {
       deleteLesson(id);
-      showToast("Lesson deleted");
+      showToast("Moved to Trash");
     }
   }
 

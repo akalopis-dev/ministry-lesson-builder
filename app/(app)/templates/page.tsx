@@ -79,9 +79,9 @@ export default function TemplatesPage() {
   }
 
   function handleDelete(template: LessonTemplate) {
-    if (window.confirm(`Delete your "${template.name}" template?`)) {
+    if (window.confirm(`Move your "${template.name}" template to Trash? You can restore it from Trash for 30 days.`)) {
       deleteTemplate(template.id);
-      showToast("Template deleted");
+      showToast("Moved to Trash");
     }
   }
 

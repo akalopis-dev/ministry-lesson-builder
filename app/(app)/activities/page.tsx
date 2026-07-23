@@ -68,9 +68,9 @@ export default function ActivitiesPage() {
   }
 
   function handleDelete(activity: Activity) {
-    if (window.confirm(`Remove "${activity.title}" from the Activity Library?`)) {
+    if (window.confirm(`Move "${activity.title}" to Trash? You can restore it from Trash for 30 days.`)) {
       deleteActivity(activity.id);
-      showToast("Activity removed");
+      showToast("Moved to Trash");
     }
   }
 
