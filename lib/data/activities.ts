@@ -214,7 +214,8 @@ export const ACTIVITIES: Activity[] = [
     duration: "15–20 min",
     suppliesLevel: "No supplies",
     summary: "Each person shares two true facts and one false one about themselves, tied to their patron saint or name day; the group guesses the lie.",
-    source: "Ministry Lesson Builder",
+    source: "SignUpGenius",
+    adaptationNote: "Classic 'Two Truths and a Lie' format, adapted with a patron saint / name day twist.",
   }),
   activity({
     title: "Name That Hymn",
@@ -232,7 +233,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "10 min",
     suppliesLevel: "No supplies",
     summary: "Rapid-fire paired choices with a faith twist (e.g., feast-day feast vs. everyday favorite); kids move to a side of the room to answer.",
-    source: "Ministry Lesson Builder",
+    source: "ChurchTrac",
   }),
   activity({
     title: "Faith & Life Discussion Cards",
@@ -252,7 +253,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "15–25 min",
     suppliesLevel: "Some supplies",
     summary: "A blindfolded partner navigates a floor scattered with soft obstacles, guided only by a teammate's spoken directions.",
-    source: "Ministry Lesson Builder",
+    source: "Youth Group Ministry",
   }),
   activity({
     title: "Human Chain Puzzle",
@@ -270,7 +271,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "20–30 min",
     suppliesLevel: "Some supplies",
     summary: "Small teams build a freestanding bridge from limited materials (straws, tape, index cards) that must hold a small weight.",
-    source: "Ministry Lesson Builder",
+    source: "Teach Engineering",
   }),
 
   // More active games for older ministries
@@ -290,7 +291,8 @@ export const ACTIVITIES: Activity[] = [
     duration: "20–30 min",
     suppliesLevel: "Some supplies",
     summary: "Outdoor two-team game in the spirit of capture the flag, racing to retrieve a cross-shaped marker from the opposing side.",
-    source: "Ministry Lesson Builder",
+    source: "Game Rules",
+    adaptationNote: "Based on the classic Capture the Flag format, with a cross-shaped marker in place of a flag.",
   }),
   activity({
     title: "Loaves and Fishes Relay",
@@ -299,7 +301,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "15–20 min",
     suppliesLevel: "Some supplies",
     summary: "Relay race carrying 'loaves' (bean bags) and 'fish' (plush toys) between baskets, tying into the miracle of the loaves and fishes.",
-    source: "Ministry Lesson Builder",
+    source: "Young Catholics",
     tags: ["Miracle of the loaves and fishes"],
   }),
 
@@ -311,7 +313,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "20–30 min",
     suppliesLevel: "Some supplies",
     summary: "Buzzer-style trivia where teams compete to answer questions about the lives of saints.",
-    source: "Ministry Lesson Builder",
+    source: "Draw Near Designs — Wisdom! The Orthodox Trivia Game",
   }),
   activity({
     title: "Feast Day Match-Up",
@@ -320,7 +322,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "15–20 min",
     suppliesLevel: "Some supplies",
     summary: "Memory-style card matching game pairing major feast days with their icons or short descriptions.",
-    source: "Ministry Lesson Builder",
+    source: "Orthodox Pebbles",
   }),
   activity({
     title: "Parable Charades",
@@ -347,7 +349,7 @@ export const ACTIVITIES: Activity[] = [
     duration: "15–20 min",
     suppliesLevel: "Some supplies",
     summary: "Given a set of clues, teams work out which icon or saint is being described before time runs out.",
-    source: "Ministry Lesson Builder",
+    source: "Orthodox Pebbles",
   }),
   activity({
     title: "Generations Trivia",

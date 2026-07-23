@@ -67,12 +67,20 @@ function stepComplete(id: string, lesson: LessonPlan): boolean {
   }
 }
 
-export function LessonEditor({ initialLesson }: { initialLesson: LessonPlan }) {
+export function LessonEditor({
+  initialLesson,
+  initialStep,
+  openActivityPicker,
+}: {
+  initialLesson: LessonPlan;
+  initialStep?: string;
+  openActivityPicker?: boolean;
+}) {
   const router = useRouter();
   const { saveLesson } = useLessonPlans();
   const { addTemplate } = useTemplates();
   const [lesson, setLesson] = useState<LessonPlan>(initialLesson);
-  const [activeStep, setActiveStep] = useState<string>("details");
+  const [activeStep, setActiveStep] = useState<string>(initialStep ?? "details");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirtyEnough = useRef(Boolean(initialLesson.title));
@@ -130,7 +138,7 @@ export function LessonEditor({ initialLesson }: { initialLesson: LessonPlan }) {
       case "sources":
         return <StepSources lesson={lesson} onChange={patch} />;
       case "timeline":
-        return <StepTimeline lesson={lesson} onChange={patch} />;
+        return <StepTimeline lesson={lesson} onChange={patch} autoOpenPicker={openActivityPicker} />;
       case "discussion":
         return <StepDiscussion lesson={lesson} onChange={patch} />;
       case "materials":

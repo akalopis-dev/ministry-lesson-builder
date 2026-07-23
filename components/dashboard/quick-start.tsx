@@ -42,7 +42,7 @@ export function QuickStart() {
     {
       icon: Blocks,
       label: "Build from an activity",
-      onClick: () => router.push("/activities"),
+      onClick: () => router.push("/lessons/new?from=activity"),
     },
   ];
 

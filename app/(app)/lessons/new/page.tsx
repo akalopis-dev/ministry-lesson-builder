@@ -1,10 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { blankLessonPlan } from "@/lib/types";
 import { LessonEditor } from "@/components/lessons/lesson-editor";
 
-export default function NewLessonPage() {
+function NewLessonForm() {
   const [lesson] = useState(() => blankLessonPlan());
-  return <LessonEditor initialLesson={lesson} />;
+  const searchParams = useSearchParams();
+  const fromActivity = searchParams.get("from") === "activity";
+
+  return (
+    <LessonEditor
+      initialLesson={lesson}
+      initialStep={fromActivity ? "timeline" : undefined}
+      openActivityPicker={fromActivity}
+    />
+  );
+}
+
+export default function NewLessonPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewLessonForm />
+    </Suspense>
+  );
 }
